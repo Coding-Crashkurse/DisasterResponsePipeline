@@ -75,20 +75,24 @@ from sklearn.metrics import multilabel_confusion_matrix
 pipeline = Pipeline([
 ('vect', CountVectorizer()),
 ('tfidf', TfidfTransformer()),
-('clf', MultiOutputClassifier(estimator=RandomForestClassifier(), n_jobs=-1)),
+('clf', MultiOutputClassifier(estimator=RandomForestClassifier())),
 ])
 
 param_grid = { 
-    'clf__estimator__n_estimators': [200, 500],
-    'clf__estimator__criterion' :['gini', 'entropy']
+    'clf__estimator__n_estimators': [50, 100]
 }
 
-cv = GridSearchCV(pipeline, param_grid=param_grid)
+cv = GridSearchCV(pipeline, param_grid=param_grid, n_jobs=4)
 
 cv.fit(X_train, y_train)
 y_pred = cv.predict(X_test)
 classification_report(y_test.values, y_pred)
 
-np.mean(y_test.values == y_pred)
 
-multilabel_confusion_matrix(y_test, y_pred)
+np.mean(y_test.values == y_pred)
+mcm = multilabel_confusion_matrix(y_test, y_pred)
+
+accuracy_per_col = [(matrix[1, 1] + matrix[0, 0]) / sum(map(sum, matrix)) * 100 for matrix in mcm]
+
+for matrix in mcm:
+    print()
