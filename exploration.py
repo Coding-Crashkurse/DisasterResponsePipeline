@@ -18,15 +18,14 @@ clean_colnames = [re.sub("-.*", "", name) for name in colnames]
 
 categories = categories.rename(columns=dict(zip(current_colnames, clean_colnames)))
 categories = categories.applymap(lambda x: re.sub(".*-", "", x)).astype("int64")
-categories
-
-
-categories.sum(axis=1).value_counts()
-
 
 df.drop(columns=["categories"], inplace=True)
 df = pd.concat([df, categories], axis=1)
-df
+df.drop_duplicates(subset=["message"], inplace=True)
+df = df[df["related"] != 2]
+
+
+df["related"].value_counts()
 
 ### Message
 from nltk.tokenize import word_tokenize
@@ -39,7 +38,7 @@ stop_words = stopwords.words("english")
 def tokenize(text):
     # normalize case and remove punctuation
     text = re.sub(r"[^a-zA-Z0-9]", " ", text.lower())
-    
+      
     # tokenize text
     tokens = word_tokenize(text)
     
@@ -54,10 +53,42 @@ tokenize("The last official estimate several weeks ago said the floods had cause
 ### Creating model
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.multioutput import MultiOutputClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
 
 vect = CountVectorizer(tokenizer=tokenize)
 tfidf = TfidfTransformer()
+clf = RandomForestClassifier()
 
-X_train_counts = vect.fit_transform(df["message"])
-X_train_tfidf = tfidf.fit_transform(X_train_counts)
-X_train_tfidf.toarray().shape
+X = df["message"]
+y = df.iloc[:, 4:]
+
+X_train, X_test, y_train, y_test = train_test_split(X, y)
+
+## Test multilabel CM
+from sklearn.model_selection import GridSearchCV
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import multilabel_confusion_matrix
+
+
+pipeline = Pipeline([
+('vect', CountVectorizer()),
+('tfidf', TfidfTransformer()),
+('clf', MultiOutputClassifier(estimator=RandomForestClassifier(), n_jobs=-1)),
+])
+
+param_grid = { 
+    'clf__estimator__n_estimators': [200, 500],
+    'clf__estimator__criterion' :['gini', 'entropy']
+}
+
+cv = GridSearchCV(pipeline, param_grid=param_grid)
+
+cv.fit(X_train, y_train)
+y_pred = cv.predict(X_test)
+classification_report(y_test.values, y_pred)
+
+np.mean(y_test.values == y_pred)
+
+multilabel_confusion_matrix(y_test, y_pred)
