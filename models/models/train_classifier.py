@@ -3,12 +3,29 @@ import re
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import stopwords
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.multioutput import MultiOutputClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
+from sklearn.model_selection import GridSearchCV
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import multilabel_confusion_matrix
 
 lemmatizer = WordNetLemmatizer()
+stop_words = stopwords.words("english")
+vect = CountVectorizer(tokenizer=tokenize)
+tfidf = TfidfTransformer()
+clf = RandomForestClassifier()
 
 
 def load_data(database_filepath):
-    pass
+    engine = create_engine("sqlite:///" + database_filename)
+    df = pd.read_sql_table("DisasterResponse", con=engine)
+    X = df["message"]
+    Y = df.iloc[:, 4:]
+    category_names = Y.columns
+    return X, Y, category_names
 
 
 def tokenize(text):
@@ -23,7 +40,22 @@ def tokenize(text):
 
 
 def build_model():
-    pass
+    pipeline = Pipeline(
+        [
+            ("vect", CountVectorizer()),
+            ("tfidf", TfidfTransformer()),
+            ("clf", MultiOutputClassifier(estimator=RandomForestClassifier())),
+        ]
+    )
+
+    param_grid = {
+        "clf__estimator__n_estimators": [200, 500],
+        "clf__estimator__max_features": ["auto", "sqrt", "log2"],
+        "clf__estimator__max_depth": [4, 5, 6, 7, 8],
+        "clf__estimator__criterion": ["gini", "entropy"],
+    }
+    cv = GridSearchCV(pipeline, param_grid=param_grid, n_jobs=4)
+    return cv
 
 
 def evaluate_model(model, X_test, Y_test, category_names):
