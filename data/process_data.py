@@ -3,7 +3,6 @@ import pandas as pd
 from sqlalchemy import create_engine
 import re
 import os
-from sqlalchemy import create_engine
 from sqlalchemy_utils import database_exists, create_database
 
 

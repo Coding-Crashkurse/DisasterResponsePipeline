@@ -11,17 +11,15 @@ from sklearn.metrics import classification_report
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import multilabel_confusion_matrix
-
-lemmatizer = WordNetLemmatizer()
-stop_words = stopwords.words("english")
-vect = CountVectorizer(tokenizer=tokenize)
-tfidf = TfidfTransformer()
-clf = RandomForestClassifier()
+import pickle
+from sqlalchemy import create_engine
+import pandas as pd
+from sqlalchemy import MetaData
 
 
 def load_data(database_filepath):
-    engine = create_engine("sqlite:///" + database_filename)
-    df = pd.read_sql_table("DisasterResponse", con=engine)
+    engine = create_engine("sqlite:///" + database_filepath)
+    df = pd.read_sql_table("data/DisasterResponse.db", con=engine)
     X = df["message"]
     Y = df.iloc[:, 4:]
     category_names = Y.columns
@@ -29,6 +27,8 @@ def load_data(database_filepath):
 
 
 def tokenize(text):
+    lemmatizer = WordNetLemmatizer()
+    stop_words = stopwords.words("english")
     text = re.sub(
         r"[^a-zA-Z0-9]", " ", text.lower()
     )  # normalize case and remove punctuation
@@ -40,6 +40,7 @@ def tokenize(text):
 
 
 def build_model():
+
     pipeline = Pipeline(
         [
             ("vect", CountVectorizer()),
@@ -59,11 +60,15 @@ def build_model():
 
 
 def evaluate_model(model, X_test, Y_test, category_names):
-    pass
+    y_pred = model.predict(X_test)
+    print(classification_report(Y_test.values, y_pred))
+    print(f"Accuracy: ${np.mean(Y_test.values == y_pred)}")
 
 
 def save_model(model, model_filepath):
-    pass
+    filehandler = open(model_filepath, "wb")
+    pickle.dump(model, filehandler)
+    filehandler.close()
 
 
 def main():
