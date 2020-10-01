@@ -15,6 +15,7 @@ import pickle
 from sqlalchemy import create_engine
 import pandas as pd
 from sqlalchemy import MetaData
+import numpy as np
 
 
 def load_data(database_filepath):
@@ -50,10 +51,8 @@ def build_model():
     )
 
     param_grid = {
-        "clf__estimator__n_estimators": [200, 500],
-        "clf__estimator__max_features": ["auto", "sqrt", "log2"],
+        "clf__estimator__n_estimators": [100, 200],
         "clf__estimator__max_depth": [4, 5, 6, 7, 8],
-        "clf__estimator__criterion": ["gini", "entropy"],
     }
     cv = GridSearchCV(pipeline, param_grid=param_grid, n_jobs=4)
     return cv

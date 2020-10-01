@@ -80,9 +80,7 @@ pipeline = Pipeline([
 
 param_grid = { 
     'clf__estimator__n_estimators': [200, 500],
-    'clf__estimator__max_features': ['auto', 'sqrt', 'log2'],
-    'clf__estimator__max_depth' : [4,5,6,7,8],
-    'clf__estimator__criterion' :['gini', 'entropy']
+    'clf__estimator__max_depth' : [4,5]
 }
 
 cv = GridSearchCV(pipeline, param_grid=param_grid, n_jobs=4)
