@@ -11,7 +11,7 @@ from sklearn.metrics import classification_report
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import multilabel_confusion_matrix
-import pickle
+import joblib
 from sqlalchemy import create_engine
 import pandas as pd
 from sqlalchemy import MetaData
@@ -35,7 +35,9 @@ def tokenize(text):
     )  # normalize case and remove punctuation
     tokens = word_tokenize(text)  # tokenize text
     tokens = [
-        lemmatizer.lemmatize(word) for word in tokens if word not in stop_words
+        lemmatizer.lemmatize(word).lower().strip()
+        for word in tokens
+        if word not in stop_words
     ]  # lemmatize and remove stop words
     return tokens
 
@@ -44,17 +46,17 @@ def build_model():
 
     pipeline = Pipeline(
         [
-            ("vect", CountVectorizer()),
+            ("vect", CountVectorizer(tokenizer=tokenize)),
             ("tfidf", TfidfTransformer()),
             ("clf", MultiOutputClassifier(estimator=RandomForestClassifier())),
         ]
     )
 
     param_grid = {
-        "clf__estimator__n_estimators": [100, 200],
-        "clf__estimator__max_depth": [4, 5, 6, 7, 8],
+        "clf__estimator__n_estimators": [100, 200, 500],
+        "clf__estimator__criterion": ["gini", "entropy"],
     }
-    cv = GridSearchCV(pipeline, param_grid=param_grid, n_jobs=4)
+    cv = GridSearchCV(pipeline, param_grid=param_grid)
     return cv
 
 
@@ -65,9 +67,7 @@ def evaluate_model(model, X_test, Y_test, category_names):
 
 
 def save_model(model, model_filepath):
-    filehandler = open(model_filepath, "wb")
-    pickle.dump(model, filehandler)
-    filehandler.close()
+    joblib.dump(model, model_filepath)
 
 
 def main():
@@ -94,7 +94,7 @@ def main():
     else:
         print(
             "Please provide the filepath of the disaster messages database "
-            "as the first argument and the filepath of the pickle file to "
+            "as the first argument and the filepath of the joblib dump file to "
             "save the model to as the second argument. \n\nExample: python "
             "train_classifier.py ../data/DisasterResponse.db classifier.pkl"
         )

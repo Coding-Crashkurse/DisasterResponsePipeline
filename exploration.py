@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 import re
 
-categories_raw = pd.read_csv("C:/Users/User/Desktop/Udacity Nanodegree/Projects/DisasterResponsePipeline/data/data/disaster_categories.csv")
-messages_raw = pd.read_csv("C:/Users/User/Desktop/Udacity Nanodegree/Projects/DisasterResponsePipeline/data/data/disaster_messages.csv")
+categories_raw = pd.read_csv("C:/Users/User/Desktop/Udacity Nanodegree/Projects/DisasterResponsePipeline/data/disaster_categories.csv")
+messages_raw = pd.read_csv("C:/Users/User/Desktop/Udacity Nanodegree/Projects/DisasterResponsePipeline/data/disaster_messages.csv")
 
 
 df = pd.merge(messages_raw, categories_raw, how="left", on="id")
@@ -73,20 +73,30 @@ from sklearn.metrics import multilabel_confusion_matrix
 
 
 pipeline = Pipeline([
-('vect', CountVectorizer()),
+('vect', CountVectorizer(tokenizer=tokenize)),
 ('tfidf', TfidfTransformer()),
 ('clf', MultiOutputClassifier(estimator=RandomForestClassifier())),
 ])
 
 param_grid = { 
-    'clf__estimator__n_estimators': [200, 500],
-    'clf__estimator__max_depth' : [4,5]
+    'clf__estimator__n_estimators': [100, 200, 500]
 }
 
-cv = GridSearchCV(pipeline, param_grid=param_grid, n_jobs=4)
+cv = GridSearchCV(pipeline, param_grid=param_grid, n_jobs=-1)
 
 cv.fit(X_train, y_train)
+X_test
+  
 y_pred = cv.predict(X_test)
+y_pred
+
+
+import pickle
+
+filehandler = open("C:/Users/User/Desktop/Udacity Nanodegree/Projects/DisasterResponsePipeline", "wb")
+
+pickle.dump(cv, "C:/Users/User/Desktop/Udacity Nanodegree/Projects/DisasterResponsePipeline/classifier.pkl")
+
 classification_report(y_test.values, y_pred)
 
 np.mean(y_test.values == y_pred)
@@ -94,3 +104,36 @@ mcm = multilabel_confusion_matrix(y_test, y_pred)
 
 accuracy_per_col = [(matrix[1, 1] + matrix[0, 0]) / sum(map(sum, matrix)) * 100 for matrix in mcm]
 accuracy_per_col
+
+df.head()
+genre_counts = df.groupby("genre").count()["message"]
+genre_names = list(genre_counts.index)
+
+####
+
+categories = df.drop(columns=["id", "message", "original", "genre"])
+stacked_categories = (
+    categories.stack()
+    .reset_index()
+    .rename(columns={0: "count", "level_1": "categories"})
+)
+
+categories_count = (
+    stacked_categories.drop(columns=["level_0"])
+    .groupby("categories")
+    .sum()
+    .sort_values(by="count", ascending=False)
+)
+categories_list = list(categories_count.index)
+
+
+genre_counts = df.groupby("genre").count()["message"]
+genre_names = list(genre_counts.index)
+
+
+categories_count["count"]
+genre_counts
+
+import joblib
+
+joblib.dump(cv, 'C:/Users/User/Desktop/Udacity Nanodegree/Projects/DisasterResponsePipeline/models/classifier.pkl') 
