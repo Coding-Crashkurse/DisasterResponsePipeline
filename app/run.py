@@ -12,20 +12,28 @@ import joblib
 from sqlalchemy import create_engine
 from sqlalchemy import inspect
 
-
 app = Flask(__name__)
 
 
 def tokenize(text):
-    tokens = word_tokenize(text)
+    """
+    Created tokens from raw text
+    Args:
+    text
+    Returns: Lemmatized tokens
+    """
     lemmatizer = WordNetLemmatizer()
-
-    clean_tokens = []
-    for tok in tokens:
-        clean_tok = lemmatizer.lemmatize(tok).lower().strip()
-        clean_tokens.append(clean_tok)
-
-    return clean_tokens
+    stop_words = stopwords.words("english")
+    text = re.sub(
+        r"[^a-zA-Z0-9]", " ", text.lower()
+    )  # normalize case and remove punctuation
+    tokens = word_tokenize(text)  # tokenize text
+    tokens = [
+        lemmatizer.lemmatize(word).lower().strip()
+        for word in tokens
+        if word not in stop_words
+    ]  # lemmatize and remove stop words
+    return tokens
 
 
 # load data
@@ -33,16 +41,13 @@ engine = create_engine("sqlite:///../data/DisasterResponse.db")
 df = pd.read_sql_table("data/DisasterResponse.db", engine)
 
 # load model
-model = joblib.load("../models/classifier2.pkl")
+model = joblib.load("../models/classifier.pkl")
 
 
 # index webpage displays cool visuals and receives user input text for model
 @app.route("/")
 @app.route("/index")
 def index():
-
-    # extract data needed for visuals
-    # TODO: Below is an example - modify to extract data for your own visuals
     genre_counts = df.groupby("genre").count()["message"]
     genre_names = list(genre_counts.index)
 
@@ -61,11 +66,6 @@ def index():
     )["count"]
     categories_list = list(categories_count.index)
 
-    print(genre_counts.head())
-    print(categories_count.head())
-
-    # create visuals
-    # TODO: Below is an example - modify to create your own visuals
     graphs = [
         {
             "data": [Bar(x=genre_names, y=genre_counts)],

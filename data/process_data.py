@@ -7,6 +7,11 @@ from sqlalchemy_utils import database_exists, create_database
 
 
 def load_data(messages_filepath, categories_filepath):
+    """
+    Created tokens from raw text
+    Args: File for messages, file for categories
+    Returns: merged dataframe
+    """
     categories_raw = pd.read_csv(messages_filepath)
     messages_raw = pd.read_csv(categories_filepath)
     df = pd.merge(messages_raw, categories_raw, how="left", on="id")
@@ -14,6 +19,11 @@ def load_data(messages_filepath, categories_filepath):
 
 
 def clean_data(df):
+    """
+    Cleans raw DataFrame to be able to use it for a machine learning model
+    Args: DataFrame
+    Returns: Clean DataFrame
+    """
     categories = df.categories.str.split(";", expand=True)
     current_colnames = categories.columns.tolist()
     colnames = categories.iloc[0, :].tolist()
@@ -30,6 +40,11 @@ def clean_data(df):
 
 
 def save_data(df, database_filename):
+    """
+    Created tokens from raw text
+    Args: DataFrame to save in Database, Path of database
+    Returns: merged dataframe
+    """
     engine = create_engine("sqlite:///" + database_filename)
     if not database_exists(engine.url):
         create_database(engine.url)

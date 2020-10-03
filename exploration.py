@@ -87,8 +87,10 @@ cv = GridSearchCV(pipeline, param_grid=param_grid, n_jobs=-1)
 cv.fit(X_train, y_train)
 X_test
   
-y_pred = cv.predict(X_test)
+y_pred = cv.predict([X_test.iloc[0]])
+X_test.iloc[0]
 y_pred
+X_test.iloc[0]
 
 
 import pickle

@@ -19,6 +19,15 @@ import numpy as np
 
 
 def load_data(database_filepath):
+    """
+    Load data from MySQL Database
+    Args:
+    Path to Database
+    Returns:
+    # X: Variable to train the model on
+    # Y: Dependent variables
+    # category_names: Column names of dependent variables
+    """
     engine = create_engine("sqlite:///" + database_filepath)
     df = pd.read_sql_table("data/DisasterResponse.db", con=engine)
     X = df["message"]
@@ -28,6 +37,12 @@ def load_data(database_filepath):
 
 
 def tokenize(text):
+    """
+    Created tokens from raw text
+    Args:
+    text
+    Returns: Lemmatized tokens
+    """
     lemmatizer = WordNetLemmatizer()
     stop_words = stopwords.words("english")
     text = re.sub(
@@ -43,7 +58,11 @@ def tokenize(text):
 
 
 def build_model():
-
+    """
+    Builds model
+    Args: None
+    Returns: Crossvalidated model
+    """
     pipeline = Pipeline(
         [
             ("vect", CountVectorizer(tokenizer=tokenize)),
@@ -54,13 +73,18 @@ def build_model():
 
     param_grid = {
         "clf__estimator__n_estimators": [100, 200, 500],
-        "clf__estimator__criterion": ["gini", "entropy"],
     }
     cv = GridSearchCV(pipeline, param_grid=param_grid)
     return cv
 
 
 def evaluate_model(model, X_test, Y_test, category_names):
+    """
+    Evaluates model performance
+    Args:
+    Crossvalidated mode, X and Y Testdata, category names of depenent variables
+    Returns: Classification Report and Accuracy of all models
+    """
     y_pred = model.predict(X_test)
     print(classification_report(Y_test.values, y_pred))
     print(f"Accuracy: ${np.mean(Y_test.values == y_pred)}")
